@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shelter - Find a house to buy, rent, or stay</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+
+  <!-- ===================== Header ===================== -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="/" class="brand">
+        <span class="mark" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 11L12 4L21 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5 10V19C5 19.5523 5.44772 20 6 20H18C18.5523 20 19 19.5523 19 19V10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <h1>Shelter</h1>
+      </a>
+
+      <!-- Category navigation: All / Selling / Renting / Short Stays -->
+      <nav class="category-nav" id="categoryNav" aria-label="House categories">
+        <button class="active" data-category="all">All</button>
+        <button data-category="sale">For Sale</button>
+        <button data-category="rent">For Rent</button>
+        <button data-category="short-stay">Short Stay</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ===================== Hero + filters ===================== -->
+  <section class="hero">
+    <div class="container">
+      <h2>Find a place to call home</h2>
+      <p>Browse houses for sale, for rent, and for short stays - then contact the owner directly. No account needed.</p>
+
+      <div class="filter-bar">
+        <div class="field">
+          <label for="locationFilter">Location</label>
+          <select id="locationFilter">
+            <option value="">All locations</option>
+            <!-- Options filled in by site.js based on available listings -->
+          </select>
+        </div>
+        <button class="btn btn-outline" id="clearFiltersBtn" type="button">Clear filters</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== Results ===================== -->
+  <section class="results-section">
+    <div class="container">
+      <div class="results-info">
+        <h3 id="resultsTitle">All listings</h3>
+        <span class="count" id="resultsCount"></span>
+      </div>
+
+      <!-- House cards (filled in by site.js) -->
+      <div class="house-grid" id="houseGrid">
+        <p class="text-muted">Loading listings...</p>
+      </div>
+
+      <!-- Shown when no listings match the current filters -->
+      <div class="empty-state hidden" id="emptyState">
+        <h3>No houses found</h3>
+        <p>Try a different category or location.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== Footer ===================== -->
+  <footer class="site-footer">
+    <div class="container">
+      <p>&copy; <span id="year"></span> Shelter. All listings are provided by independent owners.</p>
+    </div>
+  </footer>
+
+  <!-- ===================== Detail modal ===================== -->
+  <div class="modal-overlay hidden" id="detailModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card">
+      <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+
+      <!-- Photo gallery -->
+      <div class="modal-gallery">
+        <div class="main-image" id="modalMainImageWrap"></div>
+        <div class="modal-thumbs" id="modalThumbs"></div>
+      </div>
+
+      <!-- Details -->
+      <div class="modal-info">
+        <span class="badge" id="modalCategory"></span>
+        <h2 id="modalTitle"></h2>
+        <p class="modal-location" id="modalLocation"></p>
+        <p class="modal-price" id="modalPrice"></p>
+
+        <div class="modal-meta" id="modalMeta"></div>
+
+        <p class="modal-description" id="modalDescription"></p>
+
+        <div class="owner-card">
+          <h3>Contact the owner</h3>
+          <div id="modalOwner"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/site.js"></script>
+</body>
+</html>

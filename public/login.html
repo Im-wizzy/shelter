@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login - Shelter</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    /* Page-specific styles for the login screen */
+    .login-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: linear-gradient(180deg, var(--color-bg) 0%, var(--color-surface-alt) 100%);
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 380px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      padding: 36px 32px;
+    }
+
+    .login-brand {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .login-brand .mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius-md);
+      background: var(--color-primary);
+      color: #fff;
+      margin-bottom: 12px;
+    }
+
+    .login-brand h1 {
+      font-size: 1.6rem;
+      letter-spacing: 0.01em;
+    }
+
+    .login-brand p {
+      margin: 4px 0 0;
+      color: var(--color-text-muted);
+      font-size: 0.9rem;
+    }
+
+    .login-form .btn {
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 18px;
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-card">
+      <div class="login-brand">
+        <!-- Simple "roof" mark as a stand-in logo for Shelter -->
+        <span class="mark" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 11L12 4L21 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5 10V19C5 19.5523 5.44772 20 6 20H18C18.5523 20 19 19.5523 19 19V10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <h1>Shelter</h1>
+        <p>Admin sign in</p>
+      </div>
+
+      <!-- Error message shown if login fails -->
+      <div id="loginError" class="alert alert-error hidden"></div>
+
+      <form id="loginForm" class="login-form">
+        <div class="field">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" autocomplete="username" required />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" autocomplete="current-password" required />
+        </div>
+        <button type="submit" class="btn btn-primary" id="loginBtn">Log in</button>
+      </form>
+
+      <a href="/" class="back-link">&larr; Back to Shelter</a>
+    </div>
+  </div>
+
+  <script src="/js/login.js"></script>
+</body>
+</html>

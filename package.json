@@ -1,0 +1,20 @@
+{
+  "name": "shelter",
+  "version": "1.0.0",
+  "description": "Shelter - a website for selling and renting houses",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "hash": "node scripts/generate-hash.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^2.5.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "mongoose": "^8.9.5",
+    "multer": "^2.0.0"
+  }
+}

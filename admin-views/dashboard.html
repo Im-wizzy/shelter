@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard - Shelter</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/admin-assets/admin.css" />
+</head>
+<body>
+  <div class="admin-layout">
+
+    <!-- ===================== Mobile top bar ===================== -->
+    <header class="admin-topbar">
+      <div class="topbar-brand">
+        <span class="mark" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 11L12 4L21 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5 10V19C5 19.5523 5.44772 20 6 20H18C18.5523 20 19 19.5523 19 19V10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <h1>Shelter Admin</h1>
+      </div>
+      <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">&#9776;</button>
+    </header>
+
+    <!-- ===================== Sidebar ===================== -->
+    <aside class="admin-sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <span class="mark" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 11L12 4L21 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5 10V19C5 19.5523 5.44772 20 6 20H18C18.5523 20 19 19.5523 19 19V10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <h1>Shelter</h1>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="/admin" class="active">Listings</a>
+        <a href="/admin/listings/new">Add new listing</a>
+        <a href="/" target="_blank" rel="noopener">View public site</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button id="logoutBtn">Log out</button>
+      </div>
+    </aside>
+
+    <!-- ===================== Main content ===================== -->
+    <main class="admin-main">
+      <div class="page-header">
+        <div>
+          <h2>Listings</h2>
+          <p>Manage every house you've uploaded to Shelter.</p>
+        </div>
+        <a href="/admin/listings/new" class="btn btn-accent">+ Add new listing</a>
+      </div>
+
+      <!-- Quick stats -->
+      <div class="stats-row" id="statsRow">
+        <!-- Filled in by dashboard.js -->
+      </div>
+
+      <!-- Category / status filters -->
+      <div class="filter-tabs" id="filterTabs">
+        <button class="filter-tab active" data-filter="all">All</button>
+        <button class="filter-tab" data-filter="sale">For Sale</button>
+        <button class="filter-tab" data-filter="rent">For Rent</button>
+        <button class="filter-tab" data-filter="short-stay">Short Stay</button>
+        <button class="filter-tab" data-filter="hidden">Hidden</button>
+      </div>
+
+      <!-- Feedback messages (errors etc.) -->
+      <div id="dashboardAlert" class="alert hidden"></div>
+
+      <!-- Listings grid (populated by dashboard.js) -->
+      <div class="listings-grid" id="listingsGrid">
+        <p class="text-muted">Loading listings...</p>
+      </div>
+
+      <!-- Shown when there are no listings to display -->
+      <div class="empty-state hidden" id="emptyState">
+        <h3>No listings yet</h3>
+        <p>Add your first house to get started.</p>
+        <p style="margin-top:16px;">
+          <a href="/admin/listings/new" class="btn btn-accent">+ Add new listing</a>
+        </p>
+      </div>
+    </main>
+  </div>
+
+  <script src="/admin-assets/dashboard.js"></script>
+</body>
+</html>
