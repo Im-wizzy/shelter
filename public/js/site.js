@@ -2,19 +2,20 @@
 // public/js/site.js
 //
 // Powers the public Shelter homepage:
-//  - loads visible listings from /api/houses
-//  - lets visitors switch between All / For Sale / For Rent / Short Stay
-//  - lets visitors filter by location
-//  - renders house cards (cover photo, price, location, category)
-//  - opens a detail view with the full photo gallery, description,
-//    and the owner's contact information
-//
-// No login is required for any of this - it's all public data.
+//  - Hamburger nav that collapses/expands on mobile
+//  - Loads visible listings from /api/houses
+//  - Category tabs + location filter
+//  - House card grid
+//  - Full detail modal:
+//      - Smooth slide-up on mobile, pop-in on desktop
+//      - Photo gallery with thumbnail strip + photo counter
+//      - Stats pills (bed / bath / size)
+//      - Collapsible description (show more / less)
+//      - Owner contact buttons (Call / WhatsApp / Email)
+//      - Swipe down to close on mobile
 // =============================================================
 
-// ---- CONFIG ---------------------------------------------------
-// Keep this in sync with admin-views/assets/dashboard.js
-const CURRENCY_SYMBOL = 'GH\u20B5';
+const CURRENCY_SYMBOL = 'GH\u20B5'; // Ghanaian Cedi — change if needed
 
 const CATEGORY_LABELS = {
   sale: 'For Sale',
@@ -22,35 +23,66 @@ const CATEGORY_LABELS = {
   'short-stay': 'Short Stay'
 };
 
+const SECTION_TITLES = {
+  all: 'All listings',
+  sale: 'Houses for sale',
+  rent: 'Houses for rent',
+  'short-stay': 'Short stay homes'
+};
+
 // ---- Element references ----------------------------------------
-const categoryNav = document.getElementById('categoryNav');
+const navToggle      = document.getElementById('navToggle');
+const headerNav      = document.getElementById('headerNav');
+const categoryNav    = document.getElementById('categoryNav');
 const locationFilter = document.getElementById('locationFilter');
-const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+const clearFiltersBtn= document.getElementById('clearFiltersBtn');
+const houseGrid      = document.getElementById('houseGrid');
+const emptyState     = document.getElementById('emptyState');
+const resultsTitle   = document.getElementById('resultsTitle');
+const resultsCount   = document.getElementById('resultsCount');
 
-const houseGrid = document.getElementById('houseGrid');
-const emptyState = document.getElementById('emptyState');
-const resultsTitle = document.getElementById('resultsTitle');
-const resultsCount = document.getElementById('resultsCount');
-
-const detailModal = document.getElementById('detailModal');
-const modalClose = document.getElementById('modalClose');
-const modalMainImageWrap = document.getElementById('modalMainImageWrap');
-const modalThumbs = document.getElementById('modalThumbs');
-const modalCategory = document.getElementById('modalCategory');
-const modalTitle = document.getElementById('modalTitle');
-const modalLocation = document.getElementById('modalLocation');
-const modalPrice = document.getElementById('modalPrice');
-const modalMeta = document.getElementById('modalMeta');
-const modalDescription = document.getElementById('modalDescription');
-const modalOwner = document.getElementById('modalOwner');
+const detailModal       = document.getElementById('detailModal');
+const modalCard         = document.getElementById('modalCard');
+const modalClose        = document.getElementById('modalClose');
+const modalMainImageWrap= document.getElementById('modalMainImageWrap');
+const modalThumbs       = document.getElementById('modalThumbs');
+const modalCategory     = document.getElementById('modalCategory');
+const modalTitle        = document.getElementById('modalTitle');
+const modalLocation     = document.getElementById('modalLocation');
+const modalPrice        = document.getElementById('modalPrice');
+const modalStats        = document.getElementById('modalStats');
+const modalDescWrap     = document.getElementById('modalDescriptionWrap');
+const modalDescription  = document.getElementById('modalDescription');
+const showMoreBtn       = document.getElementById('showMoreBtn');
+const modalOwner        = document.getElementById('modalOwner');
 
 // ---- State -----------------------------------------------------
-let allHouses = [];        // every visible house from the API
-let activeCategory = 'all'; // 'all' | 'sale' | 'rent' | 'short-stay'
-let activeLocation = '';    // '' = all locations
+let allHouses      = [];
+let activeCategory = 'all';
+let activeLocation = '';
+let descExpanded   = false;
 
-// ---- Helpers ------------------------------------------------------
+// ================================================================
+// HAMBURGER NAV
+// ================================================================
+navToggle.addEventListener('click', () => {
+  const isOpen = headerNav.classList.toggle('open');
+  navToggle.classList.toggle('open', isOpen);
+  navToggle.setAttribute('aria-expanded', isOpen);
+});
 
+// Close nav when a category tab is tapped on mobile
+categoryNav.addEventListener('click', () => {
+  if (window.innerWidth < 768) {
+    headerNav.classList.remove('open');
+    navToggle.classList.remove('open');
+    navToggle.setAttribute('aria-expanded', 'false');
+  }
+});
+
+// ================================================================
+// HELPERS
+// ================================================================
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g, '&amp;')
@@ -61,15 +93,15 @@ function escapeHtml(str) {
 
 function formatPrice(house) {
   const amount = Number(house.price || 0).toLocaleString();
-  const unit = house.priceUnit ? ` <span class="unit">/ ${escapeHtml(house.priceUnit)}</span>` : '';
+  const unit   = house.priceUnit
+    ? ` <span class="unit">/ ${escapeHtml(house.priceUnit)}</span>`
+    : '';
   return `${CURRENCY_SYMBOL}${amount}${unit}`;
 }
 
-// Images are now Cloudinary objects: { url, publicId }.
-// The url is already a full, permanent link, so we can use it directly.
-
-// ---- Data loading --------------------------------------------------
-
+// ================================================================
+// DATA LOADING
+// ================================================================
 async function loadHouses() {
   try {
     const res = await fetch('/api/houses');
@@ -82,33 +114,25 @@ async function loadHouses() {
   }
 }
 
-// Build the "Location" dropdown from whatever locations actually
-// appear in the current listings, so it never offers empty results.
 function buildLocationOptions() {
   const locations = [...new Set(allHouses.map(h => h.location).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b));
 
-  // Keep the "All locations" option, then add one per unique location
-  locationFilter.innerHTML = '<option value="">All locations</option>' +
+  locationFilter.innerHTML =
+    '<option value="">All locations</option>' +
     locations.map(loc => `<option value="${escapeHtml(loc)}">${escapeHtml(loc)}</option>`).join('');
 }
 
-// ---- Filtering & rendering ------------------------------------------
-
+// ================================================================
+// FILTERING & RENDERING CARDS
+// ================================================================
 function getFilteredHouses() {
-  return allHouses.filter(house => {
-    const matchesCategory = activeCategory === 'all' || house.category === activeCategory;
-    const matchesLocation = !activeLocation || house.location === activeLocation;
-    return matchesCategory && matchesLocation;
+  return allHouses.filter(h => {
+    const matchCat = activeCategory === 'all' || h.category === activeCategory;
+    const matchLoc = !activeLocation || h.location === activeLocation;
+    return matchCat && matchLoc;
   });
 }
-
-const SECTION_TITLES = {
-  all: 'All listings',
-  sale: 'Houses for sale',
-  rent: 'Houses for rent',
-  'short-stay': 'Short stay homes'
-};
 
 function renderHouses() {
   const houses = getFilteredHouses();
@@ -129,113 +153,198 @@ function renderHouses() {
       ? `<img src="${house.images[0].url}" alt="${escapeHtml(house.title)}" loading="lazy" />`
       : `<div class="no-image">No photo available</div>`;
 
-    const categoryClass = `badge-${house.category}`;
     const categoryLabel = CATEGORY_LABELS[house.category] || house.category;
 
     const metaParts = [];
-    if (house.bedrooms) metaParts.push(`${house.bedrooms} bed`);
-    if (house.bathrooms) metaParts.push(`${house.bathrooms} bath`);
-    if (house.size) metaParts.push(escapeHtml(house.size));
+    if (house.bedrooms)  metaParts.push(`🛏 ${house.bedrooms}`);
+    if (house.bathrooms) metaParts.push(`🚿 ${house.bathrooms}`);
+    if (house.size)      metaParts.push(escapeHtml(house.size));
 
     return `
       <button type="button" class="house-card" data-id="${house.id}">
         <div class="thumb">
           ${cover}
-          <span class="badge ${categoryClass}">${categoryLabel}</span>
+          <span class="badge badge-${house.category}">${categoryLabel}</span>
         </div>
         <div class="body">
           <h3>${escapeHtml(house.title)}</h3>
           <div class="location">${escapeHtml(house.location)}</div>
           <div class="price">${formatPrice(house)}</div>
-          ${metaParts.length ? `<div class="meta">${metaParts.join(' &middot; ')}</div>` : ''}
+          ${metaParts.length ? `<div class="meta">${metaParts.join(' &nbsp;·&nbsp; ')}</div>` : ''}
         </div>
       </button>
     `;
   }).join('');
 }
 
-// ---- Detail modal -----------------------------------------------------
+// ================================================================
+// DETAIL MODAL
+// ================================================================
 
-function openModal(house) {
-  modalCategory.textContent = CATEGORY_LABELS[house.category] || house.category;
-  modalCategory.className = `badge badge-${house.category}`;
-
-  modalTitle.textContent = house.title;
-  modalLocation.textContent = house.location;
-  modalPrice.innerHTML = formatPrice(house);
-
-  // Bedrooms / bathrooms / size summary
-  const metaParts = [];
-  if (house.bedrooms) metaParts.push(`<span><strong>${house.bedrooms}</strong> Bedrooms</span>`);
-  if (house.bathrooms) metaParts.push(`<span><strong>${house.bathrooms}</strong> Bathrooms</span>`);
-  if (house.size) metaParts.push(`<span><strong>${escapeHtml(house.size)}</strong></span>`);
-  modalMeta.innerHTML = metaParts.join('');
-  modalMeta.style.display = metaParts.length ? 'flex' : 'none';
-
-  modalDescription.textContent = house.description || 'No description provided.';
-
-  // ---- Photo gallery ----
-  renderGallery(house);
-
-  // ---- Owner contact info ----
-  renderOwnerContact(house.owner);
-
-  detailModal.classList.remove('hidden');
-  document.body.style.overflow = 'hidden'; // prevent background scroll
-}
+// ---- Gallery -------------------------------------------------------
+let currentImages = [];
+let currentImageIndex = 0;
 
 function renderGallery(house) {
-  const images = house.images || [];
+  currentImages = house.images || [];
+  currentImageIndex = 0;
 
-  if (images.length === 0) {
+  if (currentImages.length === 0) {
     modalMainImageWrap.innerHTML = '<div class="no-image">No photos available</div>';
     modalThumbs.innerHTML = '';
     return;
   }
 
-  // Show the first image as the main image initially
-  modalMainImageWrap.innerHTML = `<img id="modalMainImage" src="${images[0].url}" alt="${escapeHtml(house.title)}" />`;
+  showGalleryImage(0);
 
-  modalThumbs.innerHTML = images.map((image, index) => `
+  // Thumbnail strip
+  modalThumbs.innerHTML = currentImages.map((img, i) => `
     <img
-      src="${image.url}"
-      alt="Photo ${index + 1} of ${escapeHtml(house.title)}"
-      class="${index === 0 ? 'active' : ''}"
-      data-index="${index}"
+      src="${img.url}"
+      alt="Photo ${i + 1}"
+      class="${i === 0 ? 'active' : ''}"
+      data-index="${i}"
     />
   `).join('');
-
-  // Clicking a thumbnail swaps the main image
-  modalThumbs.querySelectorAll('img').forEach(thumb => {
-    thumb.addEventListener('click', () => {
-      const index = Number(thumb.dataset.index);
-      const mainImg = modalMainImageWrap.querySelector('img');
-      if (mainImg) mainImg.src = images[index].url;
-
-      modalThumbs.querySelectorAll('img').forEach(t => t.classList.remove('active'));
-      thumb.classList.add('active');
-    });
-  });
 }
 
+function showGalleryImage(index) {
+  currentImageIndex = index;
+  const img = currentImages[index];
+
+  // Fade transition: fade out, swap src, fade in
+  const existing = modalMainImageWrap.querySelector('img');
+  if (existing) existing.style.opacity = '0';
+
+  setTimeout(() => {
+    modalMainImageWrap.innerHTML = `
+      <img src="${img.url}" alt="Photo ${index + 1}" style="opacity:0;transition:opacity 0.2s ease;" />
+      ${currentImages.length > 1
+        ? `<span class="photo-count">${index + 1} / ${currentImages.length}</span>`
+        : ''}
+    `;
+    const newImg = modalMainImageWrap.querySelector('img');
+    // Trigger fade-in after paint
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => { newImg.style.opacity = '1'; });
+    });
+  }, existing ? 150 : 0);
+
+  // Sync active thumbnail
+  modalThumbs.querySelectorAll('img').forEach((t, i) => {
+    t.classList.toggle('active', i === index);
+  });
+
+  // Scroll active thumbnail into view
+  const activeTile = modalThumbs.querySelector('img.active');
+  if (activeTile) activeTile.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+}
+
+// Thumbnail click → show that image
+modalThumbs.addEventListener('click', (e) => {
+  const thumb = e.target.closest('img[data-index]');
+  if (!thumb) return;
+  showGalleryImage(Number(thumb.dataset.index));
+});
+
+// Swipe left/right on the main image to navigate photos
+let touchStartX = 0;
+modalMainImageWrap.addEventListener('touchstart', (e) => {
+  touchStartX = e.touches[0].clientX;
+}, { passive: true });
+
+modalMainImageWrap.addEventListener('touchend', (e) => {
+  const diff = touchStartX - e.changedTouches[0].clientX;
+  if (Math.abs(diff) < 40) return; // too small — ignore
+  if (diff > 0 && currentImageIndex < currentImages.length - 1) {
+    showGalleryImage(currentImageIndex + 1); // swipe left → next
+  } else if (diff < 0 && currentImageIndex > 0) {
+    showGalleryImage(currentImageIndex - 1); // swipe right → prev
+  }
+}, { passive: true });
+
+// ---- Open modal ----------------------------------------------------
+function openModal(house) {
+  // Category badge
+  modalCategory.textContent = CATEGORY_LABELS[house.category] || house.category;
+  modalCategory.className   = `badge badge-${house.category}`;
+
+  // Title, location, price
+  modalTitle.textContent    = house.title;
+  modalLocation.textContent = house.location;
+  modalPrice.innerHTML      = formatPrice(house);
+
+  // Stats pills
+  const stats = [];
+  if (house.bedrooms)  stats.push(`<div class="stat-pill"><span class="stat-icon">🛏</span> ${house.bedrooms} Bed${house.bedrooms > 1 ? 's' : ''}</div>`);
+  if (house.bathrooms) stats.push(`<div class="stat-pill"><span class="stat-icon">🚿</span> ${house.bathrooms} Bath${house.bathrooms > 1 ? 's' : ''}</div>`);
+  if (house.size)      stats.push(`<div class="stat-pill"><span class="stat-icon">📐</span> ${escapeHtml(house.size)}</div>`);
+  modalStats.innerHTML = stats.join('');
+  modalStats.style.display = stats.length ? 'flex' : 'none';
+
+  // Description with show-more toggle
+  const desc = (house.description || '').trim();
+  if (desc) {
+    modalDescWrap.classList.remove('hidden');
+    modalDescription.textContent = desc;
+    descExpanded = false;
+    modalDescription.classList.add('clamped');
+
+    // Only show "Show more" button if the text is actually clamped
+    // (i.e. longer than the 3-line limit). We check after a paint.
+    showMoreBtn.classList.add('hidden');
+    showMoreBtn.textContent = 'Show more ↓';
+    requestAnimationFrame(() => {
+      if (modalDescription.scrollHeight > modalDescription.clientHeight + 4) {
+        showMoreBtn.classList.remove('hidden');
+      }
+    });
+  } else {
+    modalDescWrap.classList.add('hidden');
+  }
+
+  // Gallery
+  renderGallery(house);
+
+  // Owner contact
+  renderOwnerContact(house.owner);
+
+  // Show the modal
+  detailModal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+
+  // Scroll modal info back to top (in case it was scrolled from a
+  // previous opening)
+  const info = modalCard.querySelector('.modal-info');
+  if (info) info.scrollTop = 0;
+  modalCard.scrollTop = 0;
+}
+
+// ---- Description show more / less ----------------------------------
+showMoreBtn.addEventListener('click', () => {
+  descExpanded = !descExpanded;
+  modalDescription.classList.toggle('clamped', !descExpanded);
+  showMoreBtn.textContent = descExpanded ? 'Show less ↑' : 'Show more ↓';
+});
+
+// ---- Owner contact -------------------------------------------------
 function renderOwnerContact(owner) {
   if (!owner || (!owner.name && !owner.phone && !owner.email && !owner.whatsapp)) {
-    modalOwner.innerHTML = '<p class="text-muted">No contact information provided.</p>';
+    modalOwner.innerHTML = '<p class="text-muted" style="margin:0">No contact information provided.</p>';
     return;
   }
 
   const links = [];
 
   if (owner.phone) {
-    links.push(`<a class="btn btn-primary btn-sm" href="tel:${escapeHtml(owner.phone.replace(/\s+/g, ''))}">Call</a>`);
+    links.push(`<a class="btn btn-primary btn-sm" href="tel:${escapeHtml(owner.phone.replace(/\s+/g, ''))}">📞 Call</a>`);
   }
   if (owner.whatsapp) {
-    // wa.me links need digits only (no spaces, dashes, or plus signs)
-    const digitsOnly = owner.whatsapp.replace(/[^0-9]/g, '');
-    links.push(`<a class="btn btn-accent btn-sm" href="https://wa.me/${digitsOnly}" target="_blank" rel="noopener">WhatsApp</a>`);
+    const digits = owner.whatsapp.replace(/[^0-9]/g, '');
+    links.push(`<a class="btn btn-accent btn-sm" href="https://wa.me/${digits}" target="_blank" rel="noopener">💬 WhatsApp</a>`);
   }
   if (owner.email) {
-    links.push(`<a class="btn btn-outline btn-sm" href="mailto:${escapeHtml(owner.email)}">Email</a>`);
+    links.push(`<a class="btn btn-outline btn-sm" href="mailto:${escapeHtml(owner.email)}">✉️ Email</a>`);
   }
 
   modalOwner.innerHTML = `
@@ -244,21 +353,57 @@ function renderOwnerContact(owner) {
   `;
 }
 
+// ---- Close modal ---------------------------------------------------
 function closeModal() {
   detailModal.classList.add('hidden');
   document.body.style.overflow = '';
 }
 
-// ---- Event listeners ---------------------------------------------------
+modalClose.addEventListener('click', closeModal);
+
+// Click outside the card to close
+detailModal.addEventListener('click', (e) => {
+  if (e.target === detailModal) closeModal();
+});
+
+// Keyboard: Escape to close, arrow keys to navigate photos
+document.addEventListener('keydown', (e) => {
+  if (detailModal.classList.contains('hidden')) return;
+
+  if (e.key === 'Escape') closeModal();
+  if (e.key === 'ArrowRight' && currentImageIndex < currentImages.length - 1) {
+    showGalleryImage(currentImageIndex + 1);
+  }
+  if (e.key === 'ArrowLeft' && currentImageIndex > 0) {
+    showGalleryImage(currentImageIndex - 1);
+  }
+});
+
+// Swipe DOWN to close the modal on mobile
+let modalTouchStartY = 0;
+modalCard.addEventListener('touchstart', (e) => {
+  modalTouchStartY = e.touches[0].clientY;
+}, { passive: true });
+
+modalCard.addEventListener('touchend', (e) => {
+  const diff = e.changedTouches[0].clientY - modalTouchStartY;
+  // Only close if swiped down by 80px+ AND the card is scrolled to the top
+  if (diff > 80 && modalCard.scrollTop === 0) {
+    closeModal();
+  }
+}, { passive: true });
+
+// ================================================================
+// FILTER EVENT LISTENERS
+// ================================================================
 
 // Category tabs
-categoryNav.addEventListener('click', (event) => {
-  const btn = event.target.closest('button[data-category]');
+categoryNav.addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-category]');
   if (!btn) return;
 
   categoryNav.querySelectorAll('button').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-
   activeCategory = btn.dataset.category;
   renderHouses();
 });
@@ -279,28 +424,16 @@ clearFiltersBtn.addEventListener('click', () => {
   renderHouses();
 });
 
-// Open a house's detail view when its card is clicked
-houseGrid.addEventListener('click', (event) => {
-  const card = event.target.closest('.house-card');
+// Open detail modal when a card is clicked
+houseGrid.addEventListener('click', (e) => {
+  const card = e.target.closest('.house-card');
   if (!card) return;
-
   const house = allHouses.find(h => h.id === card.dataset.id);
   if (house) openModal(house);
 });
 
-// Close the modal (button, clicking the overlay, or pressing Escape)
-modalClose.addEventListener('click', closeModal);
-
-detailModal.addEventListener('click', (event) => {
-  if (event.target === detailModal) closeModal();
-});
-
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && !detailModal.classList.contains('hidden')) {
-    closeModal();
-  }
-});
-
-// ---- Init -----------------------------------------------------------
+// ================================================================
+// INIT
+// ================================================================
 document.getElementById('year').textContent = new Date().getFullYear();
 loadHouses();
